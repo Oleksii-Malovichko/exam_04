@@ -2,7 +2,7 @@
 
 unsigned char reverse_bits(unsigned char octet)
 {
-	unsigned char res = 0;
+	unsigned char res;
 	int i = 0;
 	while (i < 8)
 	{
@@ -12,4 +12,10 @@ unsigned char reverse_bits(unsigned char octet)
 		i++;
 	}
 	return res;
+}
+
+int main()
+{
+	unsigned char b = reverse_bits('L');
+	printf("%c\n", b);
 }

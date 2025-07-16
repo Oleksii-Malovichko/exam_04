@@ -58,8 +58,8 @@ int exec_command(char **argv, int argc, char **envp, int is_pipe)
 
         if (dup2(tmp_stdin_fd, 0) == -1)
             fatal_error();
-        close(tmp_stdin_fd);
 
+        close(tmp_stdin_fd);
         if (is_pipe)
         {
             if (dup2(fd[1], 1) == -1)
@@ -67,7 +67,6 @@ int exec_command(char **argv, int argc, char **envp, int is_pipe)
             close(fd[0]);
             close(fd[1]);
         }
-
         execve(argv[0], argv, envp);
         print_error("error: cannot execute ");
         print_error(argv[0]);
@@ -78,7 +77,6 @@ int exec_command(char **argv, int argc, char **envp, int is_pipe)
     // parent
     waitpid(pid, NULL, 0);
     close(tmp_stdin_fd);
-
     if (is_pipe)
     {
         close(fd[1]);
@@ -106,13 +104,10 @@ int main(int argc, char **argv, char **envp)
     {
         start = i;
         is_pipe = 0;
-
         while (i < argc && strcmp(argv[i], ";") != 0 && strcmp(argv[i], "|") != 0)
             i++;
-
         if (i < argc && strcmp(argv[i], "|") == 0)
             is_pipe = 1;
-
         if (i > start)
         {
             if (strcmp(argv[start], "cd") == 0)
@@ -125,6 +120,18 @@ int main(int argc, char **argv, char **envp)
     close(tmp_stdin_fd);
     return 0;
 }
+
+/* 
+char **argv_slice(char **argv, int count)
+{
+	char **result = malloc(sizeof(char *) * (count + 1));
+	if (!result)
+		fatal();
+	for (int i = 0; i < count; i++)
+		result[i] = argv[i];
+	result[count] = NULL;
+	return result;
+} */
 
 // #include <stdio.h>
 // #include <stdlib.h>
