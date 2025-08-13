@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include "argo.h"
+// #include "vbc.h"
 
 typedef struct node {
     enum {
@@ -13,7 +13,6 @@ typedef struct node {
     struct node *l;
     struct node *r;
 }   node;
-
 
 
 node    *new_node(node n)
@@ -36,47 +35,6 @@ void    destroy_tree(node *n)
     }
     free(n);
 }
-
-int parser(json *dst, FILE *stream)
-{
-	int c;
-
-	c = peek(stream);
-	if (c == '"')
-		return parse_string(dst, stream);
-	else if (isdigit(c) || c == '-')
-		return parse_int(dst, stream);
-	else if (c == '{')
-		return parse_map(dst, stream);
-	unexpected(stream);
-	return -1;
-}
-
-int parse_int(json *dst, FILE *stream)
-{
-	int n;
-
-	if (fscanf(stream, "%d", &n) == 1)
-	{
-		dst->type = INTEGER;
-		dst->integer = n;
-		return 1;
-	}
-	unexpected(stream);
-	return -1;
-}
-
-int parse_string(json *dst, FILE *stream)
-{
-	char buffer[4096];
-	char c;
-	int i;
-
-	if (!expect(stream, '"'))
-		return -1;
-	
-}
-
 
 void    unexpected(char c)
 {
@@ -105,14 +63,110 @@ int expect(char **s, char c)
 }
 
 
+
 node	*parse_expr(char *s);
 node    *parse_number_or_group(char **s);
 node    *parse_addition(char **s);
 node    *parse_multiplication(char **s);
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+node *parse_expr(char *s)
+{
+	node *res = parse_addition(&s);
+	if (!res)
+		return NULL;
+	if (*s)
+	{
+		destroy_tree(res);
+		unexpected(*s);
+		return NULL;
+	}
+	return res;
+}
 
+node *parse_addition(char **s)
+{
+	node *left;
+	node *right;
+	node tmp;
 
+	left = parse_multiplication(s);
+	if (!left)
+		return NULL;
+	while (**s == '+')
+	{
+		(*s)++;
+		right = parse_multiplication(s);
+		if (!right)
+		{
+			destroy_tree(left);
+			return NULL;
+		}
+		tmp.type = ADD;
+		tmp.l = left;
+		tmp.r = right;
+		left = new_node(tmp);
+	}
+	return left;
+}
+
+node *parse_multiplication(char **s)
+{
+	node *left;
+	node *right;
+	node tmp;
+
+	left = parse_number_or_group(s);
+	if (!left)
+		return NULL;
+	while (**s == '*')
+	{
+		(*s)++;
+		right = parse_number_or_group(s);
+		if (!right)
+		{
+			destroy_tree(left);
+			return NULL;
+		}
+		tmp.type = MULTI;
+		tmp.l = left;
+		tmp.r = right;
+		left = new_node(tmp);
+	}
+	return left;
+}
+
+node *parse_number_or_group(char **s)
+{
+	node *res;
+	node tmp;
+
+	res = NULL;
+	if (**s == '(')
+	{
+		(*s)++;
+		res = parse_addition(s);
+		if (!res)
+			return NULL;
+		if (!expect(s, ')'))
+		{
+			destroy_tree(res);
+			return NULL;
+		}
+		// (*s)++;
+		return res;
+	}
+	if (isdigit(**s))
+	{
+		tmp.type = VAL;
+		tmp.val = **s - '0';
+		res = new_node(tmp);
+		(*s)++;
+		return res;
+	}
+	unexpected(**s);
+	return NULL;
+}
 
 int eval_tree(node *tree)
 {
