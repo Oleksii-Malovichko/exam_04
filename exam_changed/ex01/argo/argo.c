@@ -129,6 +129,24 @@ void	serialize(json j)
 	}
 }
 
+int	main(int argc, char **argv)
+{
+	if (argc != 2)
+		return 1;
+	char *filename = argv[1];
+	FILE *stream = fopen(filename, "r");
+	json	file;
+	if (argo (&file, stream) != 1)
+	{
+		free_json(file);
+		return 1;
+	}
+	serialize(file);
+	printf("\n");
+	// added
+	free_json(file);
+	fclose(stream);
+}
 
 
 
@@ -251,22 +269,3 @@ void	serialize(json j)
 // }
 
 
-
-int	main(int argc, char **argv)
-{
-	if (argc != 2)
-		return 1;
-	char *filename = argv[1];
-	FILE *stream = fopen(filename, "r");
-	json	file;
-	if (argo (&file, stream) != 1)
-	{
-		free_json(file);
-		return 1;
-	}
-	serialize(file);
-	printf("\n");
-	// added
-	free_json(file);
-	fclose(stream);
-}

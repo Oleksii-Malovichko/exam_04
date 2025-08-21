@@ -1,35 +1,34 @@
 #include "vbc.h"
 
 // 4
-node    *parse_number_or_group(char **s)
+node *parse_number_or_group(char **s)
 {
-    node    *res;
-    node    tmp;
+	node *res;
+	node tmp;
 
-    res = NULL;
-    if (**s == '(')
-    {
-        (*s)++;
-        res = parse_addition(s);
-        if (!res || **s != ')')
-        {
-            destroy_tree(res);
-            unexpected(**s);
-            return (NULL);
-        }
-        (*s)++;
-        return (res);
-    }
-    if (isdigit(**s))
-    {
-        tmp.type = VAL;
-        tmp.val = **s - '0';
-        res = new_node(tmp);
-        (*s)++;
-        return (res);
-    }
-    unexpected(**s);
-    return (NULL);
+	if (**s == '(')
+	{
+		(*s)++;
+		res = parse_addition(s);
+		if (!res)
+			return NULL;
+		if (!expect(s, ')'))
+		{
+			destroy_tree(res);
+			return NULL;
+		}
+		return res;
+	}
+	if (isdigit(**s))
+	{
+		tmp.type = VAL;
+		tmp.val = **s - '0';
+		res = new_node(tmp);
+		(*s)++;
+		return res;
+	}
+	unexpected(**s);
+	return NULL;
 }
 
 // 2

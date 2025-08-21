@@ -21,8 +21,8 @@ int parse_int(json *dst, FILE *stream)
 
 	if (fscanf(stream, "%d", &n) == 1)
 	{
-		dst->type = INTEGER;
 		dst->integer = n;
+		dst->type = INTEGER;
 		return 1;
 	}
 	unexpected(stream);
@@ -55,7 +55,7 @@ int parse_string(json *dst, FILE *stream)
 			{
 				unexpected(stream);
 				return -1;
-			}
+			}	
 		}
 		buffer[i++] = c;
 	}
@@ -65,16 +65,16 @@ int parse_string(json *dst, FILE *stream)
 	return 1;
 }
 
-void free_items(pair *items, size_t size)
+void free_pair(pair *items, size_t size)
 {
-    if (!items)
-        return;
-    for (size_t i = 0; i < size; i++)
-    {
-        free(items[i].key);          // ключ — строка
-        free_json(items[i].value);   // значение — рекурсивный json
-    }
-    free(items);
+	if (!items)
+		return ;
+	for (size_t i = 0; i < size; i++)
+	{
+		free(items[i].key);
+		free_json(items[i].value);
+	}
+	free(items);
 }
 
 int parse_map(json *dst, FILE *stream)
@@ -89,31 +89,28 @@ int parse_map(json *dst, FILE *stream)
 	size = 0;
 	while (!accept(stream, '}'))
 	{
-		pair *tmp = realloc(items, sizeof(pair)* (size + 1));
+		pair *tmp = realloc(items, sizeof(pair) * (size + 1));
 		if (!tmp)
 		{
-			free_items(items, size);
+			free_pair(items, size);
 			return -1;
 		}
 		items = tmp;
 		if (parse_string(&key, stream) == -1)
 		{
-			// free(items);
-			free_items(items, size);
+			free_pair(items, size);
 			return -1;
 		}
 		if (!expect(stream, ':'))
 		{
-			// free(items);
-			free_items(items, size);
 			free(key.string);
+			free_pair(items, size);
 			return -1;
 		}
 		if (parser(&items[size].value, stream) == -1)
 		{
-			// free(items);
-			free_items(items, size);
 			free(key.string);
+			free_pair(items, size);
 			return -1;
 		}
 		items[size].key = key.string;
@@ -121,8 +118,7 @@ int parse_map(json *dst, FILE *stream)
 		if (!accept(stream, ',') && peek(stream) != '}')
 		{
 			unexpected(stream);
-			// free(items);
-			free_items(items, size);
+			free_pair(items, size);
 			return -1;
 		}
 	}
@@ -132,7 +128,7 @@ int parse_map(json *dst, FILE *stream)
 	return 1;
 }
 
-int argo(json *key, FILE *stream)
+int argo(json *dst, FILE *stream)
 {
-	return parser(key, stream);
+	return parser(dst, stream);
 }

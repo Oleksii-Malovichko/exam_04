@@ -70,18 +70,59 @@ node    *parse_addition(char **s);
 node    *parse_multiplication(char **s);
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-node *parse_expr(char *s)
+node *parse_number_or_group(char **s)
 {
-	node *res = parse_addition(&s);
-	if (!res)
-		return NULL;
-	if (*s)
+	node tmp;
+	node *res;
+
+	if (**s == '(')
 	{
-		destroy_tree(res);
-		unexpected(*s);
-		return NULL;
+		(*s)++;
+		res = parse_addition(s);
+		if (!res)
+			return NULL;
+		if (!expect(s, ')'))
+		{
+			destroy_tree(res);
+			return NULL;
+		}
+		return res;
 	}
-	return res;
+	if (isdigit(**s))
+	{
+		tmp.type = VAL;
+		tmp.val = **s - '0';
+		res = new_node(tmp);
+		(*s)++;
+		return res;
+	}
+	unexpected(**s);
+	return NULL;
+}
+
+node *parse_multiplication(char **s)
+{
+	node *left;
+	node *right;
+	node tmp;
+	
+	left = parse_number_or_group(s);
+	if (!left)
+		return NULL;
+	while (**s == '*')
+	{
+		right = parse_number_or_group(s);
+		if (!right)
+		{
+			destroy_tree(left);
+			return NULL;
+		}
+		tmp.type = MULTI;
+		tmp.l = left;
+		tmp.r = right;
+		left = new_node(tmp);
+	}
+	return left;
 }
 
 node *parse_addition(char **s)
@@ -110,60 +151,18 @@ node *parse_addition(char **s)
 	return left;
 }
 
-node *parse_multiplication(char **s)
+node *parse_expr(char *s)
 {
-	node *left;
-	node *right;
-	node tmp;
-
-	left = parse_number_or_group(s);
-	if (!left)
+	node *res = parse_addition(&s);
+	if (!res)
 		return NULL;
-	while (**s == '*')
+	if (*s)
 	{
-		(*s)++;
-		right = parse_number_or_group(s);
-		if (!right)
-		{
-			destroy_tree(left);
-			return NULL;
-		}
-		tmp.type = MULTI;
-		tmp.l = left;
-		tmp.r = right;
-		left = new_node(tmp);
+		unexpected(*s);
+		destroy_tree(res);
+		return NULL;
 	}
-	return left;
-}
-
-node *parse_number_or_group(char **s)
-{
-	node *res;
-	node tmp;
-
-	if (**s == '(')
-	{
-		(*s)++;
-		res = parse_addition(s);
-		if (!res)
-			return NULL;
-		if (!expect(s, ')'))
-		{
-			destroy_tree(res);
-			return NULL;
-		}
-		return res;
-	}
-	if (isdigit(**s))
-	{
-		tmp.type = VAL;
-		tmp.val = **s - '0';
-		res = new_node(tmp);
-		(*s)++;
-		return res;
-	}
-	unexpected(**s);
-	return NULL;
+	return res;
 }
 
 // node *parse_number_or_group(char **s)
