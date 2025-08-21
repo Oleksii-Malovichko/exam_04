@@ -46,6 +46,7 @@ int	sandbox(void (*f)(void), unsigned int timeout, bool verbose)
 		}
 		return (-1);
 	}
+	alarm(0);
 	if(WIFEXITED(status)) // проверить завершился ли процесс нормально (с помощью exit/return), возвращает 1 если да
 	{
 		if (WEXITSTATUS(status) == 0) // извлекает код завершения проги (дочернего процесса)
@@ -67,6 +68,13 @@ int	sandbox(void (*f)(void), unsigned int timeout, bool verbose)
 		if (verbose)
 			printf("Bad function: %s\n", strsignal(sig));
 		return (0);
+	}
+	if (WIFSTOPPED(status))
+	{
+		int sig = WSTOPSIG(status);
+		if (verbose)
+			printf("Bad function: %s\n", strsignal(sig));
+		return 0;
 	}
 	return (-1);
 }

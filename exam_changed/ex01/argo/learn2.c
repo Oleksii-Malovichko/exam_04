@@ -65,6 +65,18 @@ int parse_string(json *dst, FILE *stream)
 	return 1;
 }
 
+void free_items(pair *items, size_t size)
+{
+    if (!items)
+        return;
+    for (size_t i = 0; i < size; i++)
+    {
+        free(items[i].key);          // ключ — строка
+        free_json(items[i].value);   // значение — рекурсивный json
+    }
+    free(items);
+}
+
 int parse_map(json *dst, FILE *stream)
 {
 	pair *items;
@@ -77,21 +89,30 @@ int parse_map(json *dst, FILE *stream)
 	size = 0;
 	while (!accept(stream, '}'))
 	{
-		items = realloc(items, sizeof(pair) * (size + 1));
+		pair *tmp = realloc(items, sizeof(pair)* (size + 1));
+		if (!tmp)
+		{
+			free_items(items, size);
+			return -1;
+		}
+		items = tmp;
 		if (parse_string(&key, stream) == -1)
 		{
-			free(items);
+			// free(items);
+			free_items(items, size);
 			return -1;
 		}
 		if (!expect(stream, ':'))
 		{
-			free(items);
+			// free(items);
+			free_items(items, size);
 			free(key.string);
 			return -1;
 		}
 		if (parser(&items[size].value, stream) == -1)
 		{
-			free(items);
+			// free(items);
+			free_items(items, size);
 			free(key.string);
 			return -1;
 		}
@@ -100,7 +121,8 @@ int parse_map(json *dst, FILE *stream)
 		if (!accept(stream, ',') && peek(stream) != '}')
 		{
 			unexpected(stream);
-			free(items);
+			// free(items);
+			free_items(items, size);
 			return -1;
 		}
 	}

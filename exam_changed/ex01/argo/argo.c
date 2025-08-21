@@ -266,4 +266,7 @@ int	main(int argc, char **argv)
 	}
 	serialize(file);
 	printf("\n");
+	// added
+	free_json(file);
+	fclose(stream);
 }

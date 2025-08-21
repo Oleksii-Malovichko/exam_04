@@ -1,24 +1,24 @@
 // еще 5 раз
 #include <stdbool.h>
-#include <errno.h>
-#include <string.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <signal.h>
+#include <errno.h>
+#include <stdio.h>
 
-void	alarm_handler(int sig)
+void alarm_handler(int sig)
 {
 	(void)sig;
 }
 
 int sandbox(void (*f)(void), unsigned int timeout, bool verbose)
 {
-	pid_t pid;
 	struct sigaction sa;
 	int status;
+	pid_t pid;
 
 	sa.sa_handler = alarm_handler;
 	sa.sa_flags = 0;
@@ -40,7 +40,7 @@ int sandbox(void (*f)(void), unsigned int timeout, bool verbose)
 			kill(pid, SIGKILL);
 			waitpid(pid, NULL, 0);
 			if (verbose)
-				printf("Bad function: timed out after %d seconds\n", timeout);
+				printf("Bad function: timed out after %u seconds\n", timeout);
 			return 0;
 		}
 		return -1;
@@ -63,6 +63,13 @@ int sandbox(void (*f)(void), unsigned int timeout, bool verbose)
 	if (WIFSIGNALED(status))
 	{
 		int sig = WTERMSIG(status);
+		if (verbose)
+			printf("Bad function: %s\n", strsignal(sig));
+		return 0;
+	}
+	if (WIFSTOPPED(status))
+	{
+		int sig = WSTOPSIG(status);
 		if (verbose)
 			printf("Bad function: %s\n", strsignal(sig));
 		return 0;
