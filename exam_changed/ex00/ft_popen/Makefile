@@ -1,6 +1,6 @@
 NAME = ft_popen
 
-SRCS = ft_popen2.c get_next_line/get_next_line.c get_next_line/get_next_line_utils.c
+SRCS = ft_popen.c get_next_line/get_next_line.c get_next_line/get_next_line_utils.c
 
 CC = cc
 

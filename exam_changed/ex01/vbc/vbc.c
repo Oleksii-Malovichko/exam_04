@@ -105,21 +105,22 @@ node *parse_multiplication(char **s)
 	node *left;
 	node *right;
 	node tmp;
-	
+
 	left = parse_number_or_group(s);
 	if (!left)
 		return NULL;
 	while (**s == '*')
 	{
+		(*s)++;
 		right = parse_number_or_group(s);
 		if (!right)
 		{
 			destroy_tree(left);
 			return NULL;
 		}
-		tmp.type = MULTI;
 		tmp.l = left;
 		tmp.r = right;
+		tmp.type = MULTI;
 		left = new_node(tmp);
 	}
 	return left;
@@ -143,9 +144,9 @@ node *parse_addition(char **s)
 			destroy_tree(left);
 			return NULL;
 		}
-		tmp.type = ADD;
 		tmp.l = left;
 		tmp.r = right;
+		tmp.type = ADD;
 		left = new_node(tmp);
 	}
 	return left;

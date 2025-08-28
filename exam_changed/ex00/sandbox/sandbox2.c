@@ -2,12 +2,12 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <string.h>
+#include <stdio.h>
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <string.h>
 #include <errno.h>
-#include <stdio.h>
 
 void alarm_handler(int sig)
 {
@@ -17,8 +17,8 @@ void alarm_handler(int sig)
 int sandbox(void (*f)(void), unsigned int timeout, bool verbose)
 {
 	struct sigaction sa;
-	int status;
 	pid_t pid;
+	int status;
 
 	sa.sa_handler = alarm_handler;
 	sa.sa_flags = 0;
@@ -40,7 +40,7 @@ int sandbox(void (*f)(void), unsigned int timeout, bool verbose)
 			kill(pid, SIGKILL);
 			waitpid(pid, NULL, 0);
 			if (verbose)
-				printf("Bad function: timed out after %u seconds\n", timeout);
+				printf("Bad function: timed out after %d seconds\n", timeout);
 			return 0;
 		}
 		return -1;

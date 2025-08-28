@@ -45,25 +45,80 @@ int	ft_popen(const char *file, char *const argv[], char type)
 	}
 }
 
-// to check the r
-int main()
+void    ft_putstr(const char *s)
 {
-	int fd;
-	char *line;
+    if (!s) return;
+    while (*s)
+        write(1, s++, 1);
+}
 
-	// fd = ft_popen("ls", (char *const[]){"ls", NULL}, 'r');
-	// if (fd < 0)
-	// {
-	// 	perror("ft_popen");
-	// 	return 1;
-	// }
-	fd = ft_popen("ls", (char *const []){"ls", NULL}, 'r');
-	dup2(fd, 0);
-	fd = ft_popen("grep", (char *const []){"grep", "c", NULL}, 'r');
-	while ((line = get_next_line(fd)))
-		write(1, line, strlen(line));
-	close(fd);
-	return 0;
+// int main()
+// {
+//     int  fd;
+//     char *line;
+
+//     // fd = ft_popen("ls", (char *const []){"ls", NULL}, 'r');
+// 	fd = ft_popen("grep", (char *const[]){"grep", "hello", NULL}, 'r');
+//     while ((line = get_next_line(fd)))
+//         ft_putstr(line);
+//     return (0);
+// }
+
+int main(void)
+{
+    int fd1, fd2;
+    char *line;
+
+    printf("=== Test 1: simple ls ===\n");
+    fd1 = ft_popen("ls", (char *const[]){"ls", "-l", NULL}, 'r');
+    if (fd1 == -1)
+    {
+        perror("ft_popen(ls)");
+        return (1);
+    }
+    while ((line = get_next_line(fd1)))
+    {
+        ft_putstr(line);
+        free(line);
+    }
+    close(fd1);
+
+    printf("\n=== Test 2: ls | grep \".c\" ===\n");
+    // создаём пайпинг вручную через dup2
+    fd1 = ft_popen("ls", (char *const[]){"ls", "-l", NULL}, 'r');
+    if (fd1 == -1)
+        return (1);
+
+    // перенаправляем вывод ls → stdin текущего процесса
+    dup2(fd1, STDIN_FILENO);
+    close(fd1);
+
+    // теперь читаем результат через grep
+    fd2 = ft_popen("grep", (char *const[]){"grep", ".c", NULL}, 'r');
+    if (fd2 == -1)
+        return (1);
+
+    while ((line = get_next_line(fd2)))
+    {
+        ft_putstr(line);
+        free(line);
+    }
+    close(fd2);
+
+    printf("\n=== Test 3: echo + wc ===\n");
+    fd1 = ft_popen("echo", (char *const[]){"echo", "Hello world from ft_popen!", NULL}, 'r');
+    dup2(fd1, STDIN_FILENO);
+    close(fd1);
+
+    fd2 = ft_popen("wc", (char *const[]){"wc", "-w", NULL}, 'r');
+    while ((line = get_next_line(fd2)))
+    {
+        ft_putstr(line);
+        free(line);
+    }
+    close(fd2);
+
+    return (0);
 }
 
 // to check the w
