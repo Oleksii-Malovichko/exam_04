@@ -4,38 +4,40 @@
 
 int	picoshell(char **cmds[])
 {
-	pid_t	pid;
-	int		pipefd[2];
-	int		prev_fd;
-	int		status;
-	int		exit_code;
-	int		i;
+	pid_t pid;
+	int i;
+	int status;
+	int exit_code;
+	int prev_fd;
+	int pipefd[2];
 
-	prev_fd = -1;
 	exit_code = 0;
+	prev_fd = -1;
 	i = 0;
 	while (cmds[i])
 	{
-		if (cmds[i + 1] && pipe(pipefd))
-			return (1);
+		if (cmds[i + 1] && pipe(pipefd) < 0)
+			return 1;
 		pid = fork();
-		if (pid == -1)
+		if (pid < 0)
 		{
 			if (cmds[i + 1])
 			{
 				close(pipefd[0]);
 				close(pipefd[1]);
 			}
-			return (1);
+			return 1;
 		}
 		if (pid == 0)
 		{
+			// если это не первая команда
 			if (prev_fd != -1)
 			{
 				if (dup2(prev_fd, STDIN_FILENO) == -1)
 					exit(1);
 				close(prev_fd);
-			}
+			}	
+			// если это не последняя команда
 			if (cmds[i + 1])
 			{
 				close(pipefd[0]);
@@ -60,7 +62,7 @@ int	picoshell(char **cmds[])
 		if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
 			exit_code = 1;
 	}
-	return (exit_code);
+	return exit_code;
 }
 
 // Test main
