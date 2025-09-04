@@ -74,7 +74,7 @@ node *parse_number_or_group(char **s)
 {
 	node tmp;
 	node *res;
-
+	
 	if (**s == '(')
 	{
 		(*s)++;
@@ -90,8 +90,8 @@ node *parse_number_or_group(char **s)
 	}
 	if (isdigit(**s))
 	{
-		tmp.type = VAL;
 		tmp.val = **s - '0';
+		tmp.type = VAL;
 		res = new_node(tmp);
 		(*s)++;
 		return res;

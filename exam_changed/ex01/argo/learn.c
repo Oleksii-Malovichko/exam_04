@@ -89,30 +89,28 @@ int parse_map(json *dst, FILE *stream)
 	size = 0;
 	while (!accept(stream, '}'))
 	{
-		pair *tmp = realloc(items, sizeof(pair)* (size + 1));
+		pair *tmp = realloc(items, sizeof(pair) * (size + 1));
 		if (!tmp)
 		{
-			free_items(items, size);
+			if (items)
+				free(items);
 			return -1;
 		}
 		items = tmp;
 		if (parse_string(&key, stream) == -1)
 		{
-			// free(items);
-			free_items(items, size);
+			free(items);
 			return -1;
 		}
 		if (!expect(stream, ':'))
 		{
-			// free(items);
-			free_items(items, size);
+			free(items);
 			free(key.string);
 			return -1;
 		}
 		if (parser(&items[size].value, stream) == -1)
 		{
-			// free(items);
-			free_items(items, size);
+			free(items);
 			free(key.string);
 			return -1;
 		}
@@ -121,8 +119,7 @@ int parse_map(json *dst, FILE *stream)
 		if (!accept(stream, ',') && peek(stream) != '}')
 		{
 			unexpected(stream);
-			// free(items);
-			free_items(items, size);
+			free(items);
 			return -1;
 		}
 	}

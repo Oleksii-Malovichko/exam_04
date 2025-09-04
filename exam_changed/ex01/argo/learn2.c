@@ -21,8 +21,8 @@ int parse_int(json *dst, FILE *stream)
 
 	if (fscanf(stream, "%d", &n) == 1)
 	{
-		dst->integer = n;
 		dst->type = INTEGER;
+		dst->integer = n;
 		return 1;
 	}
 	unexpected(stream);
@@ -32,12 +32,12 @@ int parse_int(json *dst, FILE *stream)
 int parse_string(json *dst, FILE *stream)
 {
 	char buffer[4096];
-	int i;
 	char c;
+	int i;
 
+	i = 0;
 	if (!expect(stream, '"'))
 		return -1;
-	i = 0;
 	while (1)
 	{
 		c = getc(stream);
@@ -55,7 +55,7 @@ int parse_string(json *dst, FILE *stream)
 			{
 				unexpected(stream);
 				return -1;
-			}	
+			}
 		}
 		buffer[i++] = c;
 	}
@@ -63,18 +63,6 @@ int parse_string(json *dst, FILE *stream)
 	dst->type = STRING;
 	dst->string = strdup(buffer);
 	return 1;
-}
-
-void free_pair(pair *items, size_t size)
-{
-	if (!items)
-		return ;
-	for (size_t i = 0; i < size; i++)
-	{
-		free(items[i].key);
-		free_json(items[i].value);
-	}
-	free(items);
 }
 
 int parse_map(json *dst, FILE *stream)
@@ -85,32 +73,33 @@ int parse_map(json *dst, FILE *stream)
 
 	if (!expect(stream, '{'))
 		return -1;
-	items = NULL;
 	size = 0;
+	items = NULL;
 	while (!accept(stream, '}'))
 	{
 		pair *tmp = realloc(items, sizeof(pair) * (size + 1));
 		if (!tmp)
 		{
-			free_pair(items, size);
+			if (items)
+				free(items);
 			return -1;
 		}
 		items = tmp;
 		if (parse_string(&key, stream) == -1)
 		{
-			free_pair(items, size);
+			free(items);
 			return -1;
 		}
 		if (!expect(stream, ':'))
 		{
+			free(items);
 			free(key.string);
-			free_pair(items, size);
 			return -1;
 		}
 		if (parser(&items[size].value, stream) == -1)
 		{
+			free(items);
 			free(key.string);
-			free_pair(items, size);
 			return -1;
 		}
 		items[size].key = key.string;
@@ -118,7 +107,7 @@ int parse_map(json *dst, FILE *stream)
 		if (!accept(stream, ',') && peek(stream) != '}')
 		{
 			unexpected(stream);
-			free_pair(items, size);
+			free(items);
 			return -1;
 		}
 	}

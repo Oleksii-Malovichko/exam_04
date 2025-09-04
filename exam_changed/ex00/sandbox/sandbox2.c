@@ -17,8 +17,8 @@ void alarm_handler(int sig)
 int sandbox(void (*f)(void), unsigned int timeout, bool verbose)
 {
 	struct sigaction sa;
-	pid_t pid;
 	int status;
+	pid_t pid;
 
 	sa.sa_handler = alarm_handler;
 	sa.sa_flags = 0;
@@ -45,6 +45,7 @@ int sandbox(void (*f)(void), unsigned int timeout, bool verbose)
 		}
 		return -1;
 	}
+	alarm(0);
 	if (WIFEXITED(status))
 	{
 		if (WEXITSTATUS(status) == 0)

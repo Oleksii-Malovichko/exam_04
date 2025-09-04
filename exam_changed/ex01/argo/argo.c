@@ -135,7 +135,7 @@ int	main(int argc, char **argv)
 		return 1;
 	char *filename = argv[1];
 	FILE *stream = fopen(filename, "r");
-	json	file;
+	json	file = {0};
 	if (argo (&file, stream) != 1)
 	{
 		free_json(file);

@@ -2,10 +2,10 @@
 
 int ft_popen(const char *file, char *const argv[], char type)
 {
-	int fds[2];
 	pid_t pid;
+	int fds[2];
 
-	if (!file || !argv || (type != 'r' && type != 'w'))
+	if (!file || !argv || (type != 'w' && type != 'r'))
 		return -1;
 	if (pipe(fds) < 0)
 		return -1;
@@ -19,15 +19,9 @@ int ft_popen(const char *file, char *const argv[], char type)
 	if (pid == 0)
 	{
 		if (type == 'r')
-		{
-			if (dup2(fds[1], STDOUT_FILENO) < 0)
-				exit(1);
-		}
+			dup2(fds[1], STDOUT_FILENO);
 		else
-		{
-			if (dup2(fds[0], STDIN_FILENO) < 0)
-				exit(1);
-		}
+			dup2(fds[0], STDIN_FILENO);
 		close(fds[0]);
 		close(fds[1]);
 		execvp(file, argv);
@@ -38,23 +32,42 @@ int ft_popen(const char *file, char *const argv[], char type)
 		close(fds[1]);
 		return fds[0];
 	}
-	close(fds[0]);
-	return fds[1];
+	else
+	{
+		close(fds[0]);
+		return fds[1];
+	}
 }
 
 int main()
 {
 	int fd;
-	char *line;
+	char buffer[11];
+	ssize_t nread;
 
 	fd = ft_popen("ls", (char *const[]){"ls", NULL}, 'r');
-	if (fd < 0)
+	while (1)
 	{
-		perror("ft_popen");
-		return 1;
+		nread = read(fd, buffer, sizeof(buffer) - 1);
+		if (nread == -1)
+			return 1;
+		if (nread == 0)
+			return 0;
+		buffer[nread] = '\0';
+		printf("%s", buffer);
 	}
-	while ((line = get_next_line(fd)))
-		write(1, line, strlen(line));
+
+	// int fd;
+	// char *line;
+
+	// fd = ft_popen("ls", (char *const[]){"ls", NULL}, 'r');
+	// if (fd < 0)
+	// {
+	// 	perror("ft_popen");
+	// 	return 1;
+	// }
+	// while ((line = get_next_line(fd)))
+	// 	write(1, line, strlen(line));
 	return 0;
 }
 

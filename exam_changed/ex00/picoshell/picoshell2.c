@@ -6,26 +6,26 @@
 int picoshell(char **cmds[])
 {
 	pid_t pid;
-	int status;
-	int pipefd[2];
-	int prev_fd;
 	int i;
 	int exit_code;
+	int status;
+	int fds[2];
+	int prev_fd;
 
 	i = 0;
 	exit_code = 0;
 	prev_fd = -1;
 	while (cmds[i])
 	{
-		if (cmds[i + 1] && pipe(pipefd) < 0)
+		if (cmds[i + 1] && pipe(fds) < 0)
 			return 1;
 		pid = fork();
 		if (pid < 0)
 		{
 			if (cmds[i + 1])
 			{
-				close(pipefd[0]);
-				close(pipefd[1]);
+				close(fds[0]);
+				close(fds[1]);
 			}
 			return 1;
 		}
@@ -38,9 +38,9 @@ int picoshell(char **cmds[])
 			}
 			if (cmds[i + 1])
 			{
-				close(pipefd[0]);
-				dup2(pipefd[1], STDOUT_FILENO);
-				close(pipefd[1]);
+				close(fds[0]);
+				dup2(fds[2], STDOUT_FILENO);
+				close(fds[1]);
 			}
 			execvp(cmds[i][0], cmds[i]);
 			exit(1);
@@ -49,8 +49,8 @@ int picoshell(char **cmds[])
 			close(prev_fd);
 		if (cmds[i + 1])
 		{
-			close(pipefd[1]);
-			prev_fd = pipefd[0];
+			close(fds[1]);
+			prev_fd = fds[0];
 		}
 		i++;
 	}
