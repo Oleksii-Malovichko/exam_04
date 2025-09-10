@@ -31,38 +31,67 @@ int parse_int(json *dst, FILE *stream)
 
 int parse_string(json *dst, FILE *stream)
 {
-	char buffer[4096];
-	char c;
-	int i;
+    size_t cap = 16;
+    size_t len = 0;
+    char *buffer = malloc(cap);
+    if (!buffer)
+        return -1;
 
-	i = 0;
-	if (!expect(stream, '"'))
-		return -1;
-	while (1)
+    if (!expect(stream, '"')) {
+        free(buffer);
+        return -1;
+    }
+
+    while (1) {
+        int c = getc(stream);
+        if (c == EOF) {
+            free(buffer);
+            unexpected(stream);
+            return -1;
+        }
+        if (c == '"')
+            break;
+        if (c == '\\') {
+            c = getc(stream);
+            if (c == EOF) {
+                free(buffer);
+                unexpected(stream);
+                return -1;
+            }
+            if (c != '\\' && c != '"') {
+                free(buffer);
+                unexpected(stream);
+                return -1;
+            }
+        }
+        if (len + 1 >= cap) {
+            cap *= 2;
+            char *tmp = realloc(buffer, cap);
+            if (!tmp) {
+                free(buffer);
+                return -1;
+            }
+            buffer = tmp;
+        }
+        buffer[len++] = (char)c;
+    }
+
+    buffer[len] = '\0';
+    dst->type = STRING;
+    dst->string = buffer;
+    return 1;
+}
+
+void free_items(pair *items, size_t size)
+{
+	if (!items)
+		return ;
+	for (size_t i = 0; i < size; i++)
 	{
-		c = getc(stream);
-		if (c == EOF)
-		{
-			unexpected(stream);
-			return -1;
-		}
-		if (c == '"')
-			break;
-		if (c == '\\')
-		{
-			c = getc(stream);
-			if (c == EOF)
-			{
-				unexpected(stream);
-				return -1;
-			}
-		}
-		buffer[i++] = c;
+		free(items[i].key);
+		free_json(items[i].value);
 	}
-	buffer[i] = '\0';
-	dst->type = STRING;
-	dst->string = strdup(buffer);
-	return 1;
+	free(items);
 }
 
 int parse_map(json *dst, FILE *stream)
@@ -81,24 +110,24 @@ int parse_map(json *dst, FILE *stream)
 		if (!tmp)
 		{
 			if (items)
-				free(items);
+				free_items(items, size);
 			return -1;
 		}
 		items = tmp;
 		if (parse_string(&key, stream) == -1)
 		{
-			free(items);
+			free_items(items, size);
 			return -1;
 		}
 		if (!expect(stream, ':'))
 		{
-			free(items);
+			free_items(items, size);
 			free(key.string);
 			return -1;
 		}
 		if (parser(&items[size].value, stream) == -1)
 		{
-			free(items);
+			free_items(items, size);
 			free(key.string);
 			return -1;
 		}
@@ -107,7 +136,7 @@ int parse_map(json *dst, FILE *stream)
 		if (!accept(stream, ',') && peek(stream) != '}')
 		{
 			unexpected(stream);
-			free(items);
+			free_items(items, size);
 			return -1;
 		}
 	}
