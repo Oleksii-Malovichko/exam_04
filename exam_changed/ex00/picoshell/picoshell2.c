@@ -8,17 +8,20 @@ int picoshell(char **cmds[])
 	pid_t pid;
 	int i;
 	int exit_code;
-	int status;
 	int fds[2];
 	int prev_fd;
+	int status;
 
 	i = 0;
 	exit_code = 0;
 	prev_fd = -1;
 	while (cmds[i])
 	{
-		if (cmds[i + 1] && pipe(fds) < 0)
-			return 1;
+		if (cmds[i + 1])
+		{
+			if (pipe(fds) < 0)
+				return 1;
+		}
 		pid = fork();
 		if (pid < 0)
 		{
@@ -27,6 +30,8 @@ int picoshell(char **cmds[])
 				close(fds[0]);
 				close(fds[1]);
 			}
+			if (prev_fd != -1)
+				close(prev_fd);
 			return 1;
 		}
 		if (pid == 0)
@@ -45,18 +50,22 @@ int picoshell(char **cmds[])
 			execvp(cmds[i][0], cmds[i]);
 			exit(1);
 		}
-		if (prev_fd != -1)
-			close(prev_fd);
-		if (cmds[i + 1])
+		else
 		{
-			close(fds[1]);
+
+			if (prev_fd != -1)
+				close(prev_fd);
+			if (cmds[i + 1])
+				close(fds[1]);
 			prev_fd = fds[0];
+			i++;
 		}
-		i++;
 	}
-	while (wait(&status) != -1)
+	while (wait(&status) > 0)
 	{
 		if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
+			exit_code = 1;
+		if (!WIFEXITED(status))
 			exit_code = 1;
 	}
 	return exit_code;
@@ -65,52 +74,67 @@ int picoshell(char **cmds[])
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
-static int	count_cmds(int argc, char **argv)
-{
-	int	count = 1;
-	for (int i = 1; i < argc; i++)
-	{
-		if (strcmp(argv[i], "|") == 0)
-			count++;
-	}
-	return (count);
-}
-
-int	main(int argc, char **argv)
+int main(int argc, char *argv[])
 {
 	if (argc < 2)
-		return (fprintf(stderr, "Usage: %s cmd1 [args] | cmd2 [args] ...\n", argv[0]), 1);
+	{
+		fprintf(stderr, "Usage: %s cmd1 [args] '|' cmd2 [args] ...\n", argv[0]);
+		return 1;
+	}
 
-	int	cmd_count = count_cmds(argc, argv);
-	char	***cmds = calloc(cmd_count + 1, sizeof(char **));
+	// Максимум количество команд = (argc + 1) / 2
+	char ***cmds = malloc(sizeof(char **) * (argc / 2 + 2));
 	if (!cmds)
-		return (perror("calloc"), 1);
+	{
+		perror("malloc");
+		return 1;
+	}
 
-	int	i = 1, j = 0;
+	int cmd_count = 0;
+	int i = 1;
 	while (i < argc)
 	{
-		int	len = 0;
-		while (i + len < argc && strcmp(argv[i + len], "|") != 0)
-			len++;
-		cmds[j] = calloc(len + 1, sizeof(char *));
-		if (!cmds[j])
-			return (perror("calloc"), 1);
-		for (int k = 0; k < len; k++)
-			cmds[j][k] = argv[i + k];
-		cmds[j][len] = NULL;
-		i += len + 1;
-		j++;
+		// Пропускаем "|"
+		if (strcmp(argv[i], "|") == 0)
+		{
+			i++;
+			continue;
+		}
+
+		// Подсчитываем, сколько аргументов у текущей команды
+		int j = i;
+		while (j < argc && strcmp(argv[j], "|") != 0)
+			j++;
+
+		// Выделяем память под команду
+		int arg_count = j - i;
+		char **cmd = malloc(sizeof(char *) * (arg_count + 1));
+		if (!cmd)
+		{
+			perror("malloc");
+			return 1;
+		}
+
+		// Копируем аргументы
+		for (int k = 0; k < arg_count; k++)
+			cmd[k] = argv[i + k];
+		cmd[arg_count] = NULL;
+
+		cmds[cmd_count++] = cmd;
+
+		i = j;
 	}
 	cmds[cmd_count] = NULL;
 
-	int	ret = picoshell(cmds);
+	// Запускаем пайплайн
+	int ret = picoshell(cmds);
 
-	// Clean up
-	for (int i = 0; cmds[i]; i++)
+	// Освобождаем память
+	for (int i = 0; i < cmd_count; i++)
 		free(cmds[i]);
 	free(cmds);
 
-	return (ret);
+	return ret;
 }
 
 // ./picoshell2.o echo 'squalala' "|" cat "|" sed 's/a/b/g'

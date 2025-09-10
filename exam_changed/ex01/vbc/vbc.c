@@ -72,9 +72,9 @@ node    *parse_multiplication(char **s);
 
 node *parse_number_or_group(char **s)
 {
-	node tmp;
 	node *res;
-	
+	node tmp;
+
 	if (**s == '(')
 	{
 		(*s)++;
@@ -92,8 +92,8 @@ node *parse_number_or_group(char **s)
 	{
 		tmp.val = **s - '0';
 		tmp.type = VAL;
-		res = new_node(tmp);
 		(*s)++;
+		res = new_node(tmp);
 		return res;
 	}
 	unexpected(**s);
